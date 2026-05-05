@@ -1,39 +1,67 @@
 #!/usr/bin/env bash
-set -e
+set -euo pipefail
 
-# --- Config ---
-MAIN_BRANCH="main"
-DEV_BRANCH="dev"
-FEATURE_PREFIX="feature"
+# -------------------------
+# CONFIG
+# -------------------------
+REPO_NAME="Arch"
+GITHUB_USER="Alcyonius"
+REMOTE="git@github.com:$GITHUB_USER/$REPO_NAME.git"
+FEATURE_BRANCHES=("feature/login" "feature/setup" "feature/cleanup")
 
-# --- Ensure we are in git repo ---
+# -------------------------
+# INIT REPO
+# -------------------------
 if [ ! -d ".git" ]; then
-    echo "No git repo found. Initializing..."
+    echo "📦 Initialising Git repo..."
     git init
 fi
 
-# --- Setup remote ---
-GIT_REMOTE_URL="git@github.com:YOUR_USERNAME/YOUR_REPO.git"
-
+# -------------------------
+# Add remote if missing
+# -------------------------
 if ! git remote | grep -q origin; then
-    git remote add origin "$GIT_REMOTE_URL"
-    echo "Added remote origin: $GIT_REMOTE_URL"
+    git remote add origin "$REMOTE"
+    echo "🔗 Remote added: $REMOTE"
 fi
 
-# --- Create main branch ---
-git checkout -B "$MAIN_BRANCH"
-git add .
-git commit -m "Initial commit" || true
-git push -u origin "$MAIN_BRANCH" --force
+# -------------------------
+# Ensure main branch
+# -------------------------
+git checkout -B main
 
-# --- Create dev branch ---
-git checkout -B "$DEV_BRANCH"
-git push -u origin "$DEV_BRANCH" --force
+# Add + commit everything if needed
+git add -A
+if ! git diff --cached --quiet; then
+    git commit -m "Initial commit"
+else
+    echo "✓ Nothing to commit"
+fi
 
-# --- Create a sample feature branch ---
-FEATURE_BRANCH="${FEATURE_PREFIX}/example"
-git checkout -B "$FEATURE_BRANCH"
-git push -u origin "$FEATURE_BRANCH" --force
+# Push main (force if needed)
+git push -u origin main --force
 
-echo "Branches created and pushed:"
+# -------------------------
+# Create dev branch
+# -------------------------
+git checkout -B dev
+git push -u origin dev --force
+
+# -------------------------
+# Create feature branches
+# -------------------------
+for f in "${FEATURE_BRANCHES[@]}"; do
+    git checkout -B "$f"
+    git push -u origin "$f" --force
+done
+
+# -------------------------
+# Set tracking upstream
+# -------------------------
+git branch --set-upstream-to=origin/main main || true
+
+echo "✅ Branch setup complete!"
+echo "Branches now on GitHub:"
 git branch -a
+echo ""
+echo "🎯 GitHub Actions will auto-create PRs for dev & feature/* branches."
