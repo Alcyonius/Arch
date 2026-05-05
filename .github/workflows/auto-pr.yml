@@ -23,3 +23,4 @@ jobs:
           base: main
           branch: ${{ github.ref_name }}
           draft: false
+          auto-merge: true
